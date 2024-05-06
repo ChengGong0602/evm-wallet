@@ -13,18 +13,16 @@ SMTP_PORT = 587
 SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
-YOUR_INFURA_PROJECT_ID =  os.getenv('YOUR_INFURA_PROJECT_ID')
+YOUR_INFURA_PROJECT_ID = os.getenv('YOUR_INFURA_PROJECT_ID')
 
 # Counter and list to track created wallets
 w3 = Web3(Web3.HTTPProvider(f'https://mainnet.infura.io/v3/{YOUR_INFURA_PROJECT_ID}'))
 count_wallets_created = 0
 
-
 async def attempt_wallet_operations():
-    global count_wallets_created  # Declare the use of the global variable
+    global count_wallets_created
     while True:
         try:
-
             # Generate wallet
             acct = w3.eth.account.create()
             address = acct.address
@@ -33,29 +31,27 @@ async def attempt_wallet_operations():
             balance = w3.eth.get_balance(address)
             if balance > 0:
                 balance_in_ether = w3.from_wei(balance, 'ether')
-
                 # Send email to admin
                 await send_email(address, balance_in_ether)
-
                 # Save wallet details
                 save_wallet_details(address, private_key)
             count_wallets_created += 1
             print("Created wallet numbers:", count_wallets_created)
-            # Break the loop if successful
             break
         except Exception as e:
             print(f"An error occurred: {e}. Retrying...")
-            await asyncio.sleep(5)  # Wait for 5 seconds before retrying
+            await asyncio.sleep(5)
 
 async def hourly_update():
     global count_wallets_created
-
     while True:
-        await asyncio.sleep(3600)  # Wait for one hour
+        await asyncio.sleep(3600)
         if count_wallets_created > 0:
             await send_email(str(count_wallets_created))
+        else:
+            print("-----------------------")
 
-async def send_email(address,  balance=None):
+async def send_email(address, balance=None):
     msg = EmailMessage()
     if balance is not None:
         msg.set_content(f'Wallet {address} has a balance of {balance} ETH.')
@@ -63,16 +59,16 @@ async def send_email(address,  balance=None):
     else:
         msg.set_content(f'Number of wallets created in the last hour: {address}')
         msg['Subject'] = 'Hourly Wallet Creation Update'
-    msg['From'] = SMTP_USERNAME
-    msg['To'] = ADMIN_EMAIL
+        msg['From'] = SMTP_USERNAME
+        msg['To'] = ADMIN_EMAIL
 
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-    try:
-        server.starttls()
-        server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        server.send_message(msg)
-    finally:
-        server.quit()
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        try:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+        finally:
+            server.quit()
 
 def save_wallet_details(address, private_key):
     with open('wallet_details.txt', 'a') as file:
@@ -84,8 +80,7 @@ async def continuously_create_wallet():
         await attempt_wallet_operations()
         end_time = time.time()
         print(f"Execution time: {end_time - start_time} seconds")
-        print("Operation completed successfully. Starting again...")
-        await asyncio.sleep(2)  # Pause for 10 seconds before starting the process again
+        await asyncio.sleep(0)
 
 async def main():
     wallet_task = asyncio.create_task(continuously_create_wallet())
