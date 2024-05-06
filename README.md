@@ -33,4 +33,5 @@ You also need to have access to an Ethereum node. This can be done through servi
 ## Usage
 
 To run the script, execute the following command in the terminal:
-    ~    python wallet.py
+    ```bash
+    python wallet.py
